@@ -66,6 +66,63 @@ const Cart = () => {
     }
   };
 
+  const handleCheckout = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
+    // Create order
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .insert({
+        user_id: session.user.id,
+        total: total,
+        status: "pending"
+      })
+      .select()
+      .single();
+
+    if (orderError || !order) {
+      toast.error("Failed to create order");
+      return;
+    }
+
+    // Create order items
+    const orderItems = cartItems.map(item => ({
+      order_id: order.id,
+      product_id: item.product.id,
+      quantity: item.quantity,
+      size: item.size,
+      price: item.product.price
+    }));
+
+    const { error: itemsError } = await supabase
+      .from("order_items")
+      .insert(orderItems);
+
+    if (itemsError) {
+      toast.error("Failed to create order items");
+      return;
+    }
+
+    // Clear cart
+    const { error: clearError } = await supabase
+      .from("cart_items")
+      .delete()
+      .eq("user_id", session.user.id);
+
+    if (clearError) {
+      toast.error("Failed to clear cart");
+      return;
+    }
+
+    toast.success("Order placed successfully!");
+    navigate("/profile");
+  };
+
   const total = cartItems.reduce(
     (sum, item) => sum + (item.product.price * item.quantity),
     0
@@ -160,7 +217,7 @@ const Cart = () => {
                     </div>
                   </div>
 
-                  <Button className="w-full" size="lg">
+                  <Button className="w-full" size="lg" onClick={handleCheckout}>
                     Proceed to Checkout
                   </Button>
                 </CardContent>
