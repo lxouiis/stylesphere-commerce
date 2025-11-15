@@ -296,7 +296,7 @@ const Admin = () => {
                         {product.category} | Stock: {product.stock}
                       </p>
                       <p className="font-bold text-primary">
-                        ${product.price.toString()}
+                        Rs. {product.price.toString()}
                       </p>
                     </div>
 

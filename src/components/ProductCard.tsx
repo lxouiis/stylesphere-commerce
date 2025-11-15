@@ -35,7 +35,7 @@ export const ProductCard = ({ id, name, price, image_url, category }: ProductCar
       <CardContent className="p-4">
         <h3 className="font-semibold text-lg mb-2 line-clamp-2">{name}</h3>
         <div className="flex items-center justify-between">
-          <p className="text-2xl font-bold text-primary">${price.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-primary">Rs. {price.toFixed(2)}</p>
           <Button
             size="sm"
             onClick={(e) => {
