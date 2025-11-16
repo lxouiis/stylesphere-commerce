@@ -107,7 +107,7 @@ const Admin = () => {
     if (error) {
       toast.error("Failed to update order status");
     } else {
-      toast.success(`Order ${status}!`);
+      toast.success(`Order ${status === 'processing' ? 'approved' : 'cancelled'}!`);
       fetchOrders();
     }
   };
@@ -209,13 +209,7 @@ const Admin = () => {
       <Navigation />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold">Admin Dashboard</h1>
-          <Button variant="outline" onClick={() => window.open('/backend', '_blank')}>
-            <DatabaseIcon className="h-4 w-4 mr-2" />
-            Open Database
-          </Button>
-        </div>
+        <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
 
         <Tabs defaultValue="products" className="space-y-8">
           <TabsList>
@@ -422,10 +416,14 @@ const Admin = () => {
                         <TableCell>
                           <span
                             className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                              order.status === "approved"
+                              order.status === "processing"
                                 ? "bg-green-100 text-green-800"
-                                : order.status === "rejected"
+                                : order.status === "cancelled"
                                 ? "bg-red-100 text-red-800"
+                                : order.status === "shipped"
+                                ? "bg-blue-100 text-blue-800"
+                                : order.status === "delivered"
+                                ? "bg-purple-100 text-purple-800"
                                 : "bg-yellow-100 text-yellow-800"
                             }`}
                           >
@@ -441,7 +439,7 @@ const Admin = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => updateOrderStatus(order.id, "approved")}
+                                onClick={() => updateOrderStatus(order.id, "processing")}
                               >
                                 <Check className="h-4 w-4 mr-1" />
                                 Approve
@@ -449,7 +447,7 @@ const Admin = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => updateOrderStatus(order.id, "rejected")}
+                                onClick={() => updateOrderStatus(order.id, "cancelled")}
                               >
                                 <X className="h-4 w-4 mr-1" />
                                 Reject
