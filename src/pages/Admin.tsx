@@ -403,9 +403,9 @@ const Admin = () => {
                         </TableCell>
                         <TableCell>
                           <div>
-                            <div className="font-medium">{order.profiles.full_name}</div>
+                            <div className="font-medium">{order.profiles?.full_name || 'Unknown User'}</div>
                             <div className="text-sm text-muted-foreground">
-                              {order.profiles.email}
+                              {order.profiles?.email || 'No email'}
                             </div>
                           </div>
                         </TableCell>
