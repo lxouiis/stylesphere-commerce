@@ -8,17 +8,27 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Trash2, Edit } from "lucide-react";
+import { Trash2, Edit, Database as DatabaseIcon, Check, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Database } from "@/integrations/supabase/types";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
+type Order = Database["public"]["Tables"]["orders"]["Row"];
+type OrderItem = Database["public"]["Tables"]["order_items"]["Row"];
+
+interface OrderWithItems extends Order {
+  order_items: (OrderItem & { products: Product })[];
+  profiles: { full_name: string; email: string };
+}
 
 const Admin = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
@@ -58,6 +68,7 @@ const Admin = () => {
 
     setIsAdmin(true);
     fetchProducts();
+    fetchOrders();
   };
 
   const fetchProducts = async () => {
@@ -70,6 +81,35 @@ const Admin = () => {
       setProducts(data);
     }
     setLoading(false);
+  };
+
+  const fetchOrders = async () => {
+    const { data, error } = await supabase
+      .from("orders")
+      .select(`
+        *,
+        order_items(*, products(*)),
+        profiles(full_name, email)
+      `)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setOrders(data as OrderWithItems[]);
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, status: string) => {
+    const { error } = await supabase
+      .from("orders")
+      .update({ status })
+      .eq("id", orderId);
+
+    if (error) {
+      toast.error("Failed to update order status");
+    } else {
+      toast.success(`Order ${status}!`);
+      fetchOrders();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,9 +209,22 @@ const Admin = () => {
       <Navigation />
       
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold">Admin Dashboard</h1>
+          <Button variant="outline" onClick={() => window.open('/backend', '_blank')}>
+            <DatabaseIcon className="h-4 w-4 mr-2" />
+            Open Database
+          </Button>
+        </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <Tabs defaultValue="products" className="space-y-8">
+          <TabsList>
+            <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="orders">Orders</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="products">
+            <div className="grid lg:grid-cols-3 gap-8">
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle>{editingId ? "Edit Product" : "Add New Product"}</CardTitle>
@@ -322,6 +375,96 @@ const Admin = () => {
             ))}
           </div>
         </div>
+          </TabsContent>
+
+          <TabsContent value="orders">
+            <Card>
+              <CardHeader>
+                <CardTitle>Order Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Order ID</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Items</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {orders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-mono text-xs">
+                          {order.id.slice(0, 8)}...
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{order.profiles.full_name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {order.profiles.email}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {order.order_items.map((item, idx) => (
+                              <div key={idx}>
+                                {item.products.name} x{item.quantity}
+                              </div>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>Rs. {order.total.toString()}</TableCell>
+                        <TableCell>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                              order.status === "approved"
+                                ? "bg-green-100 text-green-800"
+                                : order.status === "rejected"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {order.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(order.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          {order.status === "pending" && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateOrderStatus(order.id, "approved")}
+                              >
+                                <Check className="h-4 w-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateOrderStatus(order.id, "rejected")}
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Reject
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
