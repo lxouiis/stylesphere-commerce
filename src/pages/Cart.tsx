@@ -85,10 +85,12 @@ const Cart = () => {
       .select()
       .single();
 
-    if (orderError || !order) {
-      toast.error("Failed to create order");
-      return;
-    }
+   if (orderError || !order) {
+  console.error("orderError", orderError);
+  toast.error("Failed to create order");
+  return;
+}
+
 
     // Create order items
     const orderItems = cartItems.map(item => ({
