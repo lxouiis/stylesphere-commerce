@@ -11,7 +11,7 @@ This project uses a Platform as a Service architecture, providing a complete dev
 ### Technology Stack
 
 **Frontend (PaaS)**
-- **Platform**: render
+- **Platform**: Vercel
 - **Framework**: React 18 with TypeScript
 - **Build Tool**: Vite
 - **Styling**: Tailwind CSS with shadcn/ui components
