@@ -83,20 +83,25 @@ const Admin = () => {
     setLoading(false);
   };
 
-  const fetchOrders = async () => {
-    const { data, error } = await supabase
-      .from("orders")
-      .select(`
-        *,
-        order_items(*, products(*)),
-        profiles(full_name, email)
-      `)
-      .order("created_at", { ascending: false });
+const fetchOrders = async () => {
+  const { data, error } = await supabase
+    .from("orders")
+    .select(`
+      *,
+      order_items(*, products(*))
+    `)
+    .order("created_at", { ascending: false });
 
-    if (!error && data) {
-      setOrders(data as OrderWithItems[]);
-    }
-  };
+  if (error) {
+    console.error("Error fetching orders:", error);
+    toast.error("Failed to fetch orders");
+    return;
+  }
+
+  console.log("Orders from Supabase:", data);
+  setOrders(data as any);
+};
+
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     const { error } = await supabase
